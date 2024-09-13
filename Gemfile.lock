@@ -3,22 +3,16 @@ GEM
   specs:
     connection_pool (2.4.1)
     pg (1.5.8)
-    rack (3.1.7)
-    rackup (2.1.0)
-      rack (>= 3)
-      webrick (~> 1.8)
     redis (5.3.0)
       redis-client (>= 0.22.0)
     redis-client (0.22.2)
       connection_pool
-    webrick (1.8.1)
 
 PLATFORMS
   arm64-darwin-22
 
 DEPENDENCIES
   pg
-  rackup (~> 2.1)
   redis
 
 BUNDLED WITH
