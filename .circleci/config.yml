@@ -35,7 +35,9 @@ jobs:
             echo "$FAIRWINDS_QUAY_TOKEN" |  docker login -u "$FAIRWINDS_QUAY_USER" --password-stdin quay.io
       - docker/build:
           image: quay.io/fairwinds/yelb-appserver
-
+          cache_from: quay.io/fairwinds/yelb-appserver:v0.1.0
+      - docker/push:
+          image: quay.io/fairwinds/yelb-appserver
 
 workflows:
   version: 2
