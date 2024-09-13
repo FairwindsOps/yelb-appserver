@@ -73,8 +73,8 @@ end
 $yelbdbhost = settings.yelbdbhost
 $yelbdbport = settings.yelbdbport
 $redishost = settings.redishost
-$yelbdbuser => settings.yelbdbuser
-$yelbdbpassword => settings.yelbdbpassword
+$yelbdbuser = settings.yelbdbuser
+$yelbdbpassword = settings.yelbdbpassword
 
 get '/api/pageviews' do
     headers 'Access-Control-Allow-Origin' => '*'

@@ -1,0 +1,49 @@
+version: 2.1
+
+orbs:
+  rok8s: fairwinds/rok8s-scripts@14
+  docker: circleci/docker@2.7.0
+
+references:
+  install_vault: &install_vault
+    run:
+      name: install hashicorp vault
+      command: |
+        apk --update add curl yq
+        cd /tmp
+        curl -LO https://releases.hashicorp.com/vault/1.13.2/vault_1.13.2_linux_amd64.zip
+        sha256sum vault_1.13.2_linux_amd64.zip | grep f7930279de8381de7c532164b4a4408895d9606c0d24e2e9d2f9acb5dfe99b3c
+        unzip vault_1.13.2_linux_amd64.zip
+        mv vault /usr/bin/vault
+
+jobs:
+  build:
+    working_directory: /go/src/github.com/fairwindsops/yelb-appserver
+    resource_class: large
+    shell: /bin/bash
+    docker:
+      - image: goreleaser/goreleaser:v1.18.2
+    steps:
+      - checkout
+      - setup_remote_docker
+      - *install_vault
+      - rok8s/get_vault_env:
+          vault_path: repo/global/env
+      - run:
+          name: docker login
+          command: |
+            echo "$FAIRWINDS_QUAY_TOKEN" |  docker login -u "$FAIRWINDS_QUAY_USER" --password-stdin quay.io
+      - docker/build:
+          image: quay.io/fairwinds/yelb-appserver
+
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              only: /v.*/
