@@ -1,4 +1,4 @@
-FROM bitnami/ruby:2.7.4
+FROM bitnami/ruby:2.7
 
 ################## BEGIN INSTALLATION ######################
 
