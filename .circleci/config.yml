@@ -9,43 +9,28 @@ references:
     run:
       name: install hashicorp vault
       command: |
-        apk --update add curl yq
-        cd /tmp
-        curl -LO https://releases.hashicorp.com/vault/1.13.2/vault_1.13.2_linux_amd64.zip
-        sha256sum vault_1.13.2_linux_amd64.zip | grep f7930279de8381de7c532164b4a4408895d9606c0d24e2e9d2f9acb5dfe99b3c
-        unzip vault_1.13.2_linux_amd64.zip
-        mv vault /usr/bin/vault
-
-jobs:
-  build:
-    working_directory: /go/src/github.com/fairwindsops/yelb-appserver
-    resource_class: large
-    shell: /bin/bash
-    docker:
-      - image: goreleaser/goreleaser:v1.18.2
-    steps:
-      - checkout
-      - setup_remote_docker
-      - *install_vault
-      - rok8s/get_vault_env:
-          vault_path: repo/global/env
-      - run:
-          name: docker login
-          command: |
-            echo "$FAIRWINDS_QUAY_TOKEN" |  docker login -u "$FAIRWINDS_QUAY_USER" --password-stdin quay.io
-      - docker/build:
-          image: quay.io/fairwinds/yelb-appserver
-          cache_from: quay.io/fairwinds/yelb-appserver:v0.1.0
-      - docker/push:
-          image: quay.io/fairwinds/yelb-appserver
+        wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+        sudo apt update && sudo apt install vault
 
 workflows:
   version: 2
   build:
     jobs:
-      - build:
+      - docker/publish:
+          executor: docker/machine
+          after_checkout:
+            - *install_vault
+            - rok8s/get_vault_env:
+                vault_path: repo/global/env
+          image: fairwinds/yelb-appserver
+          cache_from: quay.io/fairwinds/yelb-appserver:v0.1.0
+          docker-password: FAIRWINDS_QUAY_TOKEN
+          docker-username: FAIRWINDS_QUAY_USER
+          registry: quay.io
           filters:
             branches:
               only: /.*/
             tags:
               only: /v.*/
+
