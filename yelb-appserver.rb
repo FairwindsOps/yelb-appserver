@@ -10,7 +10,6 @@
 #################################################################################
 
 require 'sinatra'
-require 'aws-sdk-dynamodb'
 require_relative 'modules/pageviews'
 require_relative 'modules/getvotes'
 require_relative 'modules/restaurant'
@@ -35,9 +34,6 @@ configure :production do
   set :yelbdbport => 5432
   set :yelbdbuser => 'yelb'
   set :yelbdbpassword => 'yelb'
-  set :yelbddbrestaurants => ENV['YELB_DDB_RESTAURANTS']
-  set :yelbddbcache => ENV['YELB_DDB_CACHE']
-  set :awsregion => ENV['AWS_REGION']
 end
 configure :test do
   set :redishost, 'redis-server' 
@@ -46,9 +42,6 @@ configure :test do
   set :yelbdbport => 5432
   set :yelbdbuser => 'yelb'
   set :yelbdbpassword => 'yelb'
-  set :yelbddbrestaurants => ENV['YELB_DDB_RESTAURANTS']
-  set :yelbddbcache => ENV['YELB_DDB_CACHE']
-  set :awsregion => ENV['AWS_REGION']
 end
 configure :development do
   set :redishost, "localhost"
@@ -57,9 +50,6 @@ configure :development do
   set :yelbdbport => 5432
   set :yelbdbuser => 'yelb'
   set :yelbdbpassword => 'yelb'
-  set :yelbddbrestaurants => ENV['YELB_DDB_RESTAURANTS']
-  set :yelbddbcache => ENV['YELB_DDB_CACHE']
-  set :awsregion => ENV['AWS_REGION']
 end
 configure :custom do
   set :redishost, ENV['REDIS_SERVER_ENDPOINT']
@@ -68,9 +58,6 @@ configure :custom do
   set :yelbdbport => 5432
   set :yelbdbuser => ENV['YELB_DB_SERVER_USER']
   set :yelbdbpassword => ENV['YELB_DB_SERVER_PASSWORD']
-  set :yelbddbrestaurants => ENV['YELB_DDB_RESTAURANTS']
-  set :yelbddbcache => ENV['YELB_DDB_CACHE']
-  set :awsregion => ENV['AWS_REGION']
 
 end
 
@@ -86,10 +73,8 @@ end
 $yelbdbhost = settings.yelbdbhost
 $yelbdbport = settings.yelbdbport
 $redishost = settings.redishost
-# the yelbddbcache, yelbdbrestaurants and the awsregion variables are only intended to use in the serverless scenario (DDB)
-if (settings.yelbddbcache != nil) then $yelbddbcache = settings.yelbddbcache end
-if (settings.yelbddbrestaurants != nil) then $yelbddbrestaurants = settings.yelbddbrestaurants end
-if (settings.awsregion != nil) then $awsregion = settings.awsregion end
+$yelbdbuser => settings.yelbdbuser
+$yelbdbpassword => settings.yelbdbpassword
 
 get '/api/pageviews' do
     headers 'Access-Control-Allow-Origin' => '*'
