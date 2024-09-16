@@ -2,7 +2,8 @@ version: 2.1
 
 orbs:
   rok8s: fairwinds/rok8s-scripts@14
-  docker: circleci/docker@2.7.0
+  docker: circleci/docker@2
+  gh: circleci/github-cli@2
 
 references:
   install_vault: &install_vault
@@ -12,6 +13,38 @@ references:
         wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
         echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
         sudo apt update && sudo apt install vault
+
+jobs:
+  deploy-staging:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - *install_vault
+      - run: sudo apt-get install --reinstall -y vault
+      - run: vault --version
+      - rok8s/get_vault_env:
+          vault_path: repo/global/env
+      - gh/install
+      - gh/clone:
+          repo: https://github.com/fairwindsops/yelb-deploy
+      - run:
+          name: deploy staging
+          command: |
+            #! /bin/bash
+
+            set -e
+
+            ls -al
+            git status
+            yq --version
+            git config --global user.email "circleci@fairwinds.com"
+            git config --global user.name "circleci"
+            git remote set-url origin https://circleci:${GITHUB_TOKEN}@github.com/fairwindsops/yelb-deploy.git
+            yq -i '(.spec.source.helm.parameters[] | select(.name == "appserver.image.tag") | .value) = strenv(CIRCLE_SHA1)' stable/application-yelb-staging.yaml
+            git diff
+            git add stable/application-yelb-staging.yaml
+            git commit -m "build: staging appserver to ${CIRCLE_SHA1}"
+            git push
 
 workflows:
   version: 2
@@ -31,6 +64,14 @@ workflows:
           filters:
             branches:
               only: /.*/
+            tags:
+              ignore: /v.*/
+      - deploy-staging:
+          requires:
+            - docker/publish
+          filters:
+            branches:
+              only: /main/
             tags:
               ignore: /v.*/
 
