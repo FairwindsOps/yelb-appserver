@@ -8,7 +8,7 @@ orbs:
 references:
   install_vault: &install_vault
     run:
-      name: install hashicorp vault
+      name: Install Hashicorp Vault
       command: |
         wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
         echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
@@ -20,8 +20,9 @@ jobs:
       - image: cimg/base:stable
     steps:
       - *install_vault
-      - run: sudo apt-get install --reinstall -y vault
-      - run: vault --version
+      - run:
+          name: Reinstall Vault (workaround)
+          command: sudo apt-get install --reinstall -y vault
       - rok8s/get_vault_env:
           vault_path: repo/global/env
       - gh/install
@@ -34,9 +35,6 @@ jobs:
 
             set -e
 
-            ls -al
-            git status
-            yq --version
             git config --global user.email "circleci@fairwinds.com"
             git config --global user.name "circleci"
             git remote set-url origin https://circleci:${GITHUB_TOKEN}@github.com/fairwindsops/yelb-deploy.git
