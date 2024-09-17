@@ -27,7 +27,7 @@ jobs:
           vault_path: repo/global/env
       - gh/install
       - gh/clone:
-          repo: https://github.com/fairwindsops/yelb-deploy
+          repo: https://github.com/fairwindsops/yelb-deploy.git
       - run:
           name: Deploy Feature
           command: |
@@ -46,7 +46,7 @@ jobs:
 
   deploy-feature:
     docker:
-      - image: cimg/base:stable
+      - image: cimg/go:1.23
     steps:
       - *install_vault
       - run:
@@ -56,7 +56,7 @@ jobs:
           vault_path: repo/global/env
       - gh/install
       - gh/clone:
-          repo: https://github.com/fairwindsops/yelb-deploy
+          repo: https://github.com/fairwindsops/yelb-deploy.git
       - run:
           name: Deploy Feature
           command: |
@@ -76,8 +76,9 @@ jobs:
             ls -al feature
             cat "$OUTPUT_FILE"
 
+            go run feature-management/main.go prune
             git diff
-            git add feature/$SANITIZED_BRANCH.json
+            git add feature/
             git commit -m "build: deploying feature $SANITIZED_BRANCH"
             git push
 
@@ -86,6 +87,24 @@ workflows:
   build:
     jobs:
       - docker/publish:
+          name: Publish Main
+          executor: docker/machine
+          after_checkout:
+            - *install_vault
+            - rok8s/get_vault_env:
+                vault_path: repo/global/env
+          image: fairwinds/yelb-appserver
+          docker-password: FAIRWINDS_QUAY_TOKEN
+          docker-username: FAIRWINDS_QUAY_USER
+          registry: quay.io
+          tag: '$CIRCLE_SHA1,${CIRCLE_BRANCH/\/-}'
+          filters:
+            branches:
+              only: /main/
+            tags:
+              ignore: /.*/
+      - docker/publish:
+          name: Publish Non-Main
           executor: docker/machine
           after_checkout:
             - *install_vault
@@ -97,12 +116,12 @@ workflows:
           registry: quay.io
           filters:
             branches:
-              only: /.*/
+              ignore: /main/
             tags:
-              ignore: /v.*/
+              ignore: /.*/
       - deploy-staging:
           requires:
-            - docker/publish
+            - 'Publish Main'
           filters:
             branches:
               only: /main/
@@ -110,7 +129,7 @@ workflows:
               ignore: /v.*/
       - deploy-feature:
           requires:
-            - docker/publish
+            - 'Publish Non-Main'
           filters:
             branches:
               ignore: /main/
