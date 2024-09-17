@@ -67,16 +67,10 @@ jobs:
             git config --global user.email "circleci@fairwinds.com"
             git config --global user.name "circleci"
             git remote set-url origin https://circleci:${GITHUB_TOKEN}@github.com/fairwindsops/yelb-deploy.git
-            export SANITIZED_BRANCH=$(echo "${CIRCLE_BRANCH}" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
-            export TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-            OUTPUT_FILE="feature/$SANITIZED_BRANCH.json"
-            echo "Deploying branch with identifier: $SANITIZED_BRANCH"
-            cp feature-template.json "$OUTPUT_FILE"
-            jq '.identifier = env.SANITIZED_BRANCH | .appserverImageTag = env.CIRCLE_SHA1 | .lastDeployed = env.TIMESTAMP' feature-template.json > "$OUTPUT_FILE"
-            ls -al feature
-            cat "$OUTPUT_FILE"
 
+            go run feature-management/main.go create --appserver-tag="$CIRCLE_SHA1"
             go run feature-management/main.go prune
+
             git diff
             git add feature/
             git commit -m "build: deploying feature $SANITIZED_BRANCH"
