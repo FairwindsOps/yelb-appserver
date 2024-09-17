@@ -67,7 +67,8 @@ jobs:
             git config --global user.email "circleci@fairwinds.com"
             git config --global user.name "circleci"
             git remote set-url origin https://circleci:${GITHUB_TOKEN}@github.com/fairwindsops/yelb-deploy.git
-            SANITIZED_BRANCH=$(echo "${CIRCLE_BRANCH}" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
+            export SANITIZED_BRANCH=$(echo "${CIRCLE_BRANCH}" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
+            export TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
             OUTPUT_FILE="feature/$SANITIZED_BRANCH.json"
             echo "Deploying branch with identifier: $SANITIZED_BRANCH"
             cp feature-template.json "$OUTPUT_FILE"
