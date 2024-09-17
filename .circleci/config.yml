@@ -68,7 +68,7 @@ jobs:
             git config --global user.name "circleci"
             git remote set-url origin https://circleci:${GITHUB_TOKEN}@github.com/fairwindsops/yelb-deploy.git
 
-            go run feature-management/main.go create --appserver-tag="$CIRCLE_SHA1"
+            go run feature-management/main.go generate --appserver-tag="$CIRCLE_SHA1"
             go run feature-management/main.go prune
 
             git diff
