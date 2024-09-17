@@ -29,7 +29,7 @@ jobs:
       - gh/clone:
           repo: https://github.com/fairwindsops/yelb-deploy
       - run:
-          name: deploy staging
+          name: Deploy Feature
           command: |
             #! /bin/bash
 
@@ -44,6 +44,42 @@ jobs:
             git commit -m "build: staging appserver to ${CIRCLE_SHA1}"
             git push
 
+  deploy-feature:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - *install_vault
+      - run:
+          name: Reinstall Vault (workaround)
+          command: sudo apt-get install --reinstall -y vault
+      - rok8s/get_vault_env:
+          vault_path: repo/global/env
+      - gh/install
+      - gh/clone:
+          repo: https://github.com/fairwindsops/yelb-deploy
+      - run:
+          name: Deploy Feature
+          command: |
+            #! /bin/bash
+
+            set -e
+
+            git config --global user.email "circleci@fairwinds.com"
+            git config --global user.name "circleci"
+            git remote set-url origin https://circleci:${GITHUB_TOKEN}@github.com/fairwindsops/yelb-deploy.git
+            SANITIZED_BRANCH=$(echo "${CIRCLE_BRANCH}" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
+            OUTPUT_FILE="feature/$SANITIZED_BRANCH.json"
+            echo "Deploying branch with identifier: $SANITIZED_BRANCH"
+            cp feature-template.json "$OUTPUT_FILE"
+            jq '.identifier = env.SANITIZED_BRANCH | .appserverImageTag = env.CIRCLE_SHA1 | .lastDeployed = env.TIMESTAMP' feature-template.json > "$OUTPUT_FILE"
+            ls -al feature
+            cat "$OUTPUT_FILE"
+
+            git diff
+            git add feature/$SANITIZED_BRANCH.json
+            git commit -m "build: deploying feature $SANITIZED_BRANCH"
+            git push
+
 workflows:
   version: 2
   build:
@@ -55,7 +91,6 @@ workflows:
             - rok8s/get_vault_env:
                 vault_path: repo/global/env
           image: fairwinds/yelb-appserver
-          cache_from: quay.io/fairwinds/yelb-appserver:v0.1.0
           docker-password: FAIRWINDS_QUAY_TOKEN
           docker-username: FAIRWINDS_QUAY_USER
           registry: quay.io
@@ -70,6 +105,14 @@ workflows:
           filters:
             branches:
               only: /main/
+            tags:
+              ignore: /v.*/
+      - deploy-feature:
+          requires:
+            - docker/publish
+          filters:
+            branches:
+              ignore: /main/
             tags:
               ignore: /v.*/
 
