@@ -73,7 +73,7 @@ jobs:
 
             git diff
             git add feature/
-            git commit -m "build: deploying feature $SANITIZED_BRANCH"
+            git commit -m "build: deploying feature $CIRCLE_BRANCH"
             git push
 
 workflows:
